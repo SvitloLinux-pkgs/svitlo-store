@@ -1,4 +1,4 @@
-app-name = COSMIC Áruház
+app-name = Svitlo Store
 comment = Alkalmazásáruház a COSMIC asztali környezethez
 keywords = applikációk;bolt;szoftver;csomagkezelő;alkalmazások;programok;
 back = Vissza

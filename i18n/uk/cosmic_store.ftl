@@ -1,4 +1,4 @@
-app-name = Крамниця COSMIC
+app-name = Магазин Svitlo
 back = Назад
 cancel = Скасувати
 check-for-updates = Пошук оновлень

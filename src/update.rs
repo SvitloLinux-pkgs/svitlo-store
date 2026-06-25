@@ -648,7 +648,7 @@ impl App {
                                 {
                                     // Use the dialog ID to make it float
                                     settings.platform_specific.application_id =
-                                        "com.system76.CosmicStoreDialog".to_string();
+                                        "org.svitlolinux.StoreDialog".to_string();
                                 }
 
                                 let (window_id, task) = window::open(settings);

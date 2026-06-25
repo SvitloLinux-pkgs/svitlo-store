@@ -1,4 +1,4 @@
-app-name = Obchod COSMIC
+app-name = Svitlo Store
 comment = Obchod s aplikáciami pre pracovné prostredie COSMIC
 keywords = Aplikácie;Softvér;Obchod;Shop;Programy;
 back = Späť

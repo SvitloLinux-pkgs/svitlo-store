@@ -1,4 +1,4 @@
-app-name = COSMIC дүкені
+app-name = Svitlo Store
 back = Артқа
 cancel = Бас тарту
 check-for-updates = Жаңартуларды тексеру

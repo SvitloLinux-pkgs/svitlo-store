@@ -1,4 +1,4 @@
-app-name = COSMIC Uygulama Mağazası
+app-name = Svitlo Store
 back = Geri
 cancel = Vazgeç
 check-for-updates = Güncellemeleri kontrol et

@@ -1,4 +1,4 @@
-app-name = कॉस्मिक स्टोर
+app-name = Svitlo Store
 back = वापस
 cancel = रद्द करें
 check-for-updates = अपडेट की जाँच करें

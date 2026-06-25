@@ -1,4 +1,4 @@
-app-name = COSMIC Butikk
+app-name = Svitlo Store
 cancel = Avbryt
 close = Lukk
 back = Tilbake

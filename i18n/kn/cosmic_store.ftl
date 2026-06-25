@@ -1,4 +1,4 @@
-app-name = ಕಾಸ್ಮಿಕ್ ಸ್ಟೋರ್
+app-name = Svitlo Store
 back = ಹಿಂದಕ್ಕೆ
 cancel = ರದ್ದುಮಾಡಿ
 check-for-updates = ನವೀಕರಣಗಳಿಗಾಗಿ ಪರಿಶೀಲಿಸಿ

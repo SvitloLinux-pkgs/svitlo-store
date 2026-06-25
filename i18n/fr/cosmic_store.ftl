@@ -1,4 +1,4 @@
-app-name = Store COSMIC
+app-name = Svitlo Store
 back = Retour
 cancel = Annuler
 check-for-updates = Rechercher des mises à jour

@@ -1,4 +1,4 @@
-app-name = COSMIC 스토어
+app-name = Svitlo Store
 back = 뒤로가기
 codec-header = "{ $application }"은(는) "{ $description }"을(를) 제공하는 추가 패키지가 필요합니다.
 codec-footer =

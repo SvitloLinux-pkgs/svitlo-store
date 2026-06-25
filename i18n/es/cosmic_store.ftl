@@ -1,4 +1,4 @@
-app-name = Tienda COSMIC
+app-name = Svitlo Store
 comment = Tienda de aplicaciones para el escritorio COSMIC
 keywords = Aplicaciones;Software;Tienda;Store;
 back = Atrás

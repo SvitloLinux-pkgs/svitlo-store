@@ -17,6 +17,7 @@ rayon = "1"
 regex = "1"
 reqwest = "0.13"
 serde = { version = "1", features = ["rc", "serde_derive"] }
+serde_json = "1"
 spdx = { git = "https://github.com/jackpot51/spdx.git" }
 tokio = { version = "1", features = ["sync"] }
 xdg = "3"
@@ -109,3 +110,7 @@ members = ["flathub-stats"]
 
 # [patch.'https://github.com/jackpot51/spdx.git']
 # spdx = { path = "../../spdx" }
+
+[[bin]]
+name = "svitlo-store"
+path = "src/main.rs"

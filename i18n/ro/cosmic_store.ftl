@@ -1,4 +1,4 @@
-app-name = Magazin COSMIC
+app-name = Svitlo Store
 back = Înapoi
 cancel = Anulează
 check-for-updates = Verifică actualizările

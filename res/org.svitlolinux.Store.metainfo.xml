@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.system76.CosmicStore</id>
+  <id>org.svitlolinux.Store</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <project_group>COSMIC</project_group>
-  <developer_name>System76</developer_name>
+  <developer_name>SvitloLinux</developer_name>
   <update_contact>jeremy@system76.com</update_contact>
-  <url type="homepage">https://github.com/pop-os/cosmic-store</url>
-  <url type="bugtracker">https://github.com/pop-os/cosmic-store</url>
-  <name>COSMIC Store</name>
+  <url type="homepage">https://github.com/SvitloLinux/svitlo-store</url>
+  <url type="bugtracker">https://github.com/SvitloLinux/svitlo-store</url>
+  <name>Svitlo Store</name>
   <summary>Application store for the COSMIC desktop</summary>
   <description>
       <p>Application store for the COSMIC desktop</p>
@@ -29,12 +29,12 @@
     <keyword>Store</keyword>
     <keyword>Shop</keyword>
   </keywords>
-  <launchable type="desktop-id">com.system76.CosmicStore.desktop</launchable>
-  <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/pop-os/cosmic-store/master/res/icons/hicolor/256x256/apps/com.system76.CosmicStore.svg</icon>
+  <launchable type="desktop-id">org.svitlolinux.Store.desktop</launchable>
+  <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/SvitloLinux-pkgs/svitlo-store/1.0.14-svitlo1/res/icons/hicolor/256x256/apps/org.svitlolinux.Store.svg</icon>
   <provides>
     <id>com.system76.CosmicApplication</id>
     <binaries>
-      <binary>cosmic-store</binary>
+      <binary>svitlo-store</binary>
     </binaries>
     <mimetypes>
         <mimetype>application/x-debian-package</mimetype>

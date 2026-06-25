@@ -1,4 +1,4 @@
-app-name = COSMIC Store
+app-name = Svitlo Store
 comment = App Store di COSMIC
 keywords = Applicazioni;Software;Store;
 back = Indietro

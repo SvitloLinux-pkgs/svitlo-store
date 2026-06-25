@@ -1,4 +1,4 @@
-app-name = COSMIC Butik
+app-name = Svitlo Store
 comment = Programbutik för skrivbordsmiljön COSMIC
 keywords = App;Software;Store;Program;Applikation;Butik;
 back = Bakåt

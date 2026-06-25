@@ -1,4 +1,4 @@
-app-name = COSMIC Store
+app-name = Svitlo Store
 back = Grįžti
 cancel = Atšaukti
 check-for-updates = Patikrinti, ar yra atnaujinimų

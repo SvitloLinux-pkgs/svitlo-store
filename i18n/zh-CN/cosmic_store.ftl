@@ -1,4 +1,4 @@
-app-name = COSMIC 软件商店
+app-name = Svitlo Store
 back = 返回
 cancel = 取消
 check-for-updates = 检查更新

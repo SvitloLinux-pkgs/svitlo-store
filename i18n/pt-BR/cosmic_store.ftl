@@ -1,4 +1,4 @@
-app-name = Loja de Aplicativos
+app-name = Svitlo Store
 comment = Loja de aplicativos do ambiente COSMIC
 back = Voltar
 cancel = Cancelar

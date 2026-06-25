@@ -1,4 +1,4 @@
-app-name = Obchod COSMIC
+app-name = Svitlo Store
 comment = Obchod s aplikacemi pro prostředí COSMIC
 keywords = Aplikace;Balíček;Balíčky;Programy;Software;Obchod;Repozitáře;Zdroje;Instalovat;Odinstalovat;Přidat;Odstranit;Odebrat;Aktualizace;Aktualizovat;Flatpak;
 back = Zpět

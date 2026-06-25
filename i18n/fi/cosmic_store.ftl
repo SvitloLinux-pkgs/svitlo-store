@@ -1,4 +1,4 @@
-app-name = COSMICin sovelluskauppa
+app-name = Svitlo Store
 back = Takaisin
 cancel = Peru
 check-for-updates = Tarkista päivitykset

@@ -1,4 +1,4 @@
-app-name = متجر COSMIC
+app-name = Svitlo Store
 comment = متجر تطبيقات لسطح مكتب COSMIC
 keywords = متجر;تطبيق;تطبيقات;برامج;
 back = ارجع

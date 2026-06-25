@@ -1,4 +1,4 @@
-app-name = Toko COSMIC
+app-name = Svitlo Store
 back = Kembali
 cancel = Batalkan
 check-for-updates = Periksa pembaruan

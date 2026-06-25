@@ -1,4 +1,4 @@
-app-name = COSMIC verslun
+app-name = Svitlo Store
 cancel = Hætta við
 import = Flytja inn
 settings = Stillingar

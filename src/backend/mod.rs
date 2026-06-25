@@ -155,3 +155,7 @@ pub fn backends(
     };
     Box::pin(futures::stream::iter(item.into_iter()))
 }
+
+// type-алиас коллекции бэкендов (ваниль cosmic-store нёс его в backend/mod.rs;
+// main.rs/search.rs импортируют `backend::Backends`)
+pub type Backends = std::collections::BTreeMap<BackendName, std::sync::Arc<dyn Backend>>;

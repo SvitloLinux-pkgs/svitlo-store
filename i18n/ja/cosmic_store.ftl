@@ -1,4 +1,4 @@
-app-name = COSMICストア
+app-name = Svitlo Store
 back = 戻る
 cancel = キャンセル
 check-for-updates = アップデートの確認

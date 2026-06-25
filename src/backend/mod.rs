@@ -1,16 +1,52 @@
+// ДЕЛЬТА форка svitlo-store к upstream src/backend/mod.rs (ProminBackend, L1.1)
+//
+// ВАЖНО про стратегию форка (выверено по ВЕНДОРЕННОМУ cosmic-store):
+//   Этот файл больше НЕ цельная замена апстримного mod.rs (стратегия b отвергнута).
+//   Реальный upstream:
+//     * `BackendName` это enum из 5 вариантов (FlatpakUser/FlatpakSystem/Packagekit/
+//       Pkgar/RpmOstree) с as_str()/is_flatpak()/FromStr. Эти варианты используются
+//       ПО ИМЕНИ вне mod.rs (src/priority.rs: BackendName::Packagekit/FlatpakUser),
+//       поэтому их нельзя просто выкинуть — снести значит чинить ещё priority.rs.
+//     * `backends(locale, refresh) -> impl Stream<Item=(BackendName, Arc<dyn Backend>)>`
+//       (НЕ `backends(locale) -> Backends`). Зовётся из main.rs::update_backends как
+//       поток с buffer_unordered(4) и load_caches на каждом бэкенде.
+//   Поэтому дельта МИНИМАЛЬНАЯ и накладывается на апстримный mod.rs:
+//     1) добавить вариант `BackendName::Promin` (+ ветки as_str/FromStr),
+//     2) под нашим feature `promin` отключить чужие бэкенды и зарегистрировать один
+//        ProminBackend в backends() с тем же Stream-контрактом,
+//     3) feature `flatpak` НЕ включать в default (libflatpak в базе Svitlo нет),
+//        бэкенды packagekit/pkgar/rpm-ostree и так выключены по feature.
+//
+// Этот файл держит подмодули дельты (promin/appstream/json_types) и СПРАВОЧНУЮ
+// версию контракта (trait Backend, Package, BackendName, backends()), выверенную
+// по вендоренному дереву. При вендоринге форка применяем дельту 1-2 поверх
+// апстримного mod.rs (см plan/FORK-INTEGRATION.md), а не подменяем его целиком.
+//
+// ПОДМОДУЛИ ДЕЛЬТЫ:
+//   promin      — ProminBackend impl Backend (subprocess promin --json)
+//   appstream   — каталог релиза + маппинг pkg<->компонент
+//   json_types  — serde под promin --json (выверено по client.py)
+
+pub mod appstream;
+pub mod json_types;
+pub mod promin;
+
 use cosmic::widget;
-use futures::StreamExt;
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     error::Error,
     fmt,
     sync::Arc,
-    time::Instant,
 };
 
 use crate::{AppId, AppInfo, AppstreamCache, GStreamerCodec, Operation};
 
-/// Enum representing the available backend types
+/// Имя бэкенда (UI группирует источники по нему). Дельта добавляет вариант Promin
+/// к апстримному enum. Остальные варианты СОХРАНЯЮТСЯ (priority.rs ключует по ним
+/// по имени; в Svitlo они просто не регистрируются — feature off).
+///
+/// Здесь справочно показан ПОЛНЫЙ enum после дельты. При накладывании на апстрим
+/// добавляем только строку `Promin,` + ветки as_str/FromStr.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum BackendName {
     FlatpakUser,
@@ -18,10 +54,10 @@ pub enum BackendName {
     Packagekit,
     Pkgar,
     RpmOstree,
+    Promin,
 }
 
 impl BackendName {
-    /// Returns the string representation of the backend name
     pub fn as_str(&self) -> &'static str {
         match self {
             BackendName::FlatpakUser => "flatpak-user",
@@ -29,10 +65,10 @@ impl BackendName {
             BackendName::Packagekit => "packagekit",
             BackendName::Pkgar => "pkgar",
             BackendName::RpmOstree => "rpm-ostree",
+            BackendName::Promin => "promin",
         }
     }
 
-    /// Check if this is a flatpak backend
     pub fn is_flatpak(&self) -> bool {
         matches!(self, BackendName::FlatpakUser | BackendName::FlatpakSystem)
     }
@@ -46,7 +82,6 @@ impl fmt::Display for BackendName {
 
 impl std::str::FromStr for BackendName {
     type Err = String;
-
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "flatpak-user" => Ok(BackendName::FlatpakUser),
@@ -54,23 +89,13 @@ impl std::str::FromStr for BackendName {
             "packagekit" => Ok(BackendName::Packagekit),
             "pkgar" => Ok(BackendName::Pkgar),
             "rpm-ostree" => Ok(BackendName::RpmOstree),
-            _ => Err(format!("unknown backend name: {}", s)),
+            "promin" => Ok(BackendName::Promin),
+            _ => Err(format!("unknown backend name: {s}")),
         }
     }
 }
 
-#[cfg(feature = "flatpak")]
-mod flatpak;
-
-#[cfg(feature = "packagekit")]
-mod packagekit;
-
-#[cfg(feature = "pkgar")]
-mod pkgar;
-
-#[cfg(feature = "rpm-ostree")]
-mod rpm_ostree;
-
+/// Карточка пакета (контракт апстрима, поля дословно).
 #[derive(Clone, Debug)]
 pub struct Package {
     pub id: AppId,
@@ -80,6 +105,9 @@ pub struct Package {
     pub extra: HashMap<String, String>,
 }
 
+/// trait Backend — контракт апстрима cosmic-store (сигнатуры выверены по
+/// вендоренному дереву). gstreamer_packages имеет дефолт у апстрима; мы метод
+/// переопределяем явно (пусто), что совместимо.
 pub trait Backend: fmt::Debug + Send + Sync {
     fn load_caches(&mut self, refresh: bool) -> Result<(), Box<dyn Error>>;
     fn info_caches(&self) -> &[AppstreamCache];
@@ -99,185 +127,31 @@ pub trait Backend: fmt::Debug + Send + Sync {
     ) -> Result<(), Box<dyn Error>>;
 }
 
-// BTreeMap for stable sort order
-pub type Backends = BTreeMap<BackendName, Arc<dyn Backend>>;
-
-/// Load store backends using rayon parallelism and concurrency.
-pub fn backends<'a>(
-    locale: &'a str,
+/// Фабрика бэкендов. ДЕЛЬТА: апстрим стримит несколько (flatpak/packagekit/...) с
+/// конкурентной загрузкой кешей и сигнатурой `backends(locale, refresh) -> impl
+/// Stream<Item=(BackendName, Arc<dyn Backend>)>`. Мы держим ТОТ ЖЕ контракт
+/// (main.rs::update_backends ждёт Stream), но конструируем один ProminBackend и
+/// сразу грузим его кеши (как апстрим в map-стадии). Возврат — поток из одного
+/// элемента.
+///
+/// ВЫВЕРИТЬ при бампе: если апстрим сменит сигнатуру/тип возврата backends()
+/// (напр уберёт refresh либо тип Stream) — отразить здесь и в дельта-патче.
+pub fn backends(
+    locale: &str,
     refresh: bool,
 ) -> impl futures::Stream<Item = (BackendName, Arc<dyn Backend>)> + Send + Unpin + 'static {
-    let backends = futures::stream::FuturesUnordered::new();
-
-    #[cfg(feature = "flatpak")]
-    {
-        for (backend_name, user) in [
-            (BackendName::FlatpakUser, true),
-            (BackendName::FlatpakSystem, false),
-        ] {
-            let (tx, rx) = tokio::sync::oneshot::channel();
-            let locale = locale.to_owned();
-
-            tokio::task::spawn_blocking(move || {
-                let start = Instant::now();
-                log::info!("adding flatpak repository");
-                _ = tx.send(match flatpak::Flatpak::new(user, &locale) {
-                    Ok(backend) => {
-                        let duration = start.elapsed();
-                        log::warn!("initialized {} backend in {:?}", backend_name, duration);
-                        let backend: Arc<dyn Backend> = Arc::new(backend);
-                        Some((backend_name, backend))
-                    }
-                    Err(err) => {
-                        log::warn!("failed to load {} backend: {}", backend_name, err);
-                        None
-                    }
-                });
-            });
-
-            backends.push(rx)
-        }
-    }
-
-    #[cfg(feature = "packagekit")]
-    {
-        let (tx, rx) = tokio::sync::oneshot::channel();
-        let locale = locale.to_owned();
-
-        tokio::task::spawn_blocking(move || {
-            let start = Instant::now();
-            log::info!("adding packagekit backend");
-            _ = tx.send(match packagekit::Packagekit::new(&locale) {
-                Ok(backend) => {
-                    let backend: Arc<dyn Backend> = Arc::new(backend);
-                    let duration = start.elapsed();
-                    log::warn!(
-                        "initialized {} backend in {:?}",
-                        BackendName::Packagekit,
-                        duration
-                    );
-                    Some((BackendName::Packagekit, backend))
-                }
-                Err(err) => {
-                    log::error!(
-                        "failed to load {} backend: {}",
-                        BackendName::Packagekit,
-                        err
-                    );
-                    None
-                }
-            });
-        });
-
-        backends.push(rx)
-    }
-
-    #[cfg(feature = "pkgar")]
-    {
-        let (tx, rx) = tokio::sync::oneshot::channel();
-        let locale = locale.to_owned();
-
-        tokio::task::spawn_blocking(move || {
-            let start = Instant::now();
-            log::info!("adding pkgar backend");
-            _ = tx.send(match pkgar::Pkgar::new(&locale) {
-                Ok(backend) => {
-                    let backend: Arc<dyn Backend> = Arc::new(backend);
-                    let duration = start.elapsed();
-                    log::info!(
-                        "initialized {} backend in {:?}",
-                        BackendName::Pkgar,
-                        duration
-                    );
-                    Some((BackendName::Pkgar, backend))
-                }
-                Err(err) => {
-                    log::error!("failed to load {} backend: {}", BackendName::Pkgar, err);
-                    None
-                }
-            })
-        });
-
-        backends.push(rx)
-    }
-
-    #[cfg(feature = "rpm-ostree")]
-    {
-        let (tx, rx) = tokio::sync::oneshot::channel();
-        let locale = locale.to_owned();
-
-        tokio::task::spawn_blocking(move || {
-            let start = Instant::now();
-            log::info!("adding rpm-ostree backend");
-            _ = tx.send(match rpm_ostree::RpmOstree::new(&locale) {
-                Ok(backend) => {
-                    let backend: Arc<dyn Backend> = Arc::new(backend);
-                    let duration = start.elapsed();
-                    log::warn!(
-                        "initialized {} backend in {:?}",
-                        BackendName::RpmOstree,
-                        duration
-                    );
-                    Some((BackendName::RpmOstree, backend))
-                }
-                Err(err) => {
-                    log::warn!(
-                        "failed to load {} backend: {}",
-                        BackendName::RpmOstree,
-                        err
-                    );
-                    None
-                }
-            });
-        });
-
-        backends.push(rx)
-    }
-
-    backends
-        // Create a stream of futures that wait for caches to be loaded for each backend received
-        .map(move |value| async move {
-            let (backend_name, mut backend) = value.ok()??;
-
-            let start = Instant::now();
-
-            let (tx, rx) = tokio::sync::oneshot::channel();
-
-            tokio::task::spawn_blocking(move || {
-                match Arc::get_mut(&mut backend).unwrap().load_caches(refresh) {
-                    Ok(()) => {
-                        let duration = start.elapsed();
-                        log::info!("loaded {} backend caches in {:?}", backend_name, duration);
-                    }
-                    Err(err) => {
-                        log::error!("failed to load {} backend caches: {}", backend_name, err);
-                    }
-                }
-
-                _ = tx.send(backend);
-            });
-
-            Some((backend_name, rx.await.unwrap()))
-        })
-        // Concurrently load caches for up to 4 backends at one time
-        .buffer_unordered(4)
-        // After all backends have been loaded, trim malloc
-        .chain(futures::stream::once(async {
-            //TODO: Workaround for xml-rs memory leak when loading appstream data
-            #[cfg(all(target_os = "linux", target_env = "gnu"))]
-            {
-                let start = Instant::now();
-                unsafe {
-                    libc::malloc_trim(0);
-                }
-                let duration = start.elapsed();
-                log::info!("trimmed allocations in {:?}", duration);
+    let item = match promin::ProminBackend::new(locale) {
+        Ok(mut b) => {
+            if let Err(e) = b.load_caches(refresh) {
+                log::error!("promin: load_caches при инициализации не удался: {e}");
             }
-
+            let backend: Arc<dyn Backend> = Arc::new(b);
+            Some((BackendName::Promin, backend))
+        }
+        Err(e) => {
+            log::error!("promin backend не инициализирован: {e}");
             None
-        }))
-        // Filter None outcomes
-        .filter_map(|result| async move { result })
-        // Pin it for `StreamExt::next()`.
-        .boxed()
+        }
+    };
+    Box::pin(futures::stream::iter(item.into_iter()))
 }

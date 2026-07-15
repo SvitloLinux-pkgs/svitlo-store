@@ -61,6 +61,12 @@ features = ["multi-window", "tokio", "winit"]
 
 [build-dependencies]
 xdgen = "0.1"
+# ДЕТЕРМИНИЗМ metainfo: xdgen пишет через xmltree, у которого attributes по умолчанию HashMap
+# (порядок итерации недетерминирован -> порядок атрибутов <icon> и пр в metainfo.xml пляшет между
+# сборками). Фича attribute-order переключает xmltree на IndexMap (сохраняет порядок вставки =
+# порядок шаблона res/*.metainfo.xml -> байт-воспроизводимо). Feature unification в build-графе
+# включает её и для xmltree внутри xdgen. Закрывает КЛАСС недетерминизма генератора метаданных.
+xmltree = { version = "0.12", features = ["attribute-order"] }
 
 [features]
 #todo : add a11y back to default

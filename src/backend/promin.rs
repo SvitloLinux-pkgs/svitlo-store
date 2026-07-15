@@ -35,7 +35,7 @@ use std::process::Command;
 use std::sync::Arc;
 
 use crate::backend::{appstream, json_types as jt, Backend, Package};
-use crate::{AppId, AppInfo, AppstreamCache, GStreamerCodec, Operation, OperationKind};
+use crate::{AppId, AppInfo, AppKind, AppstreamCache, GStreamerCodec, Operation, OperationKind};
 
 /// Бинарь client в установленной системе (sh-обёртка `python3 -m promin.client`,
 /// кладётся образом в /usr/bin/promin, см svitlo/stages/image.py).
@@ -162,6 +162,16 @@ impl ProminBackend {
         jt::parse_or_err::<jt::ListResult>(&out).map_err(Into::into)
     }
 
+    /// Принять EULA gated/nonfree-канала: `promin --json accept-eula <channel>`.
+    /// UI зовёт когда install из gated-канала падает client_eula_required (показать
+    /// EULA-текст -> согласие пользователя -> этот вызов -> повтор install). В шиппинг-сторе
+    /// стандартного канала НЕ срабатывает (EULA только у gated, nonfree ещё не в наборе).
+    #[allow(dead_code)]
+    pub fn accept_eula(&self, channel: &str) -> Result<jt::AcceptEulaResult, Box<dyn Error>> {
+        let out = self.run_json(&["accept-eula", channel])?;
+        jt::parse_or_err::<jt::AcceptEulaResult>(&out).map_err(Into::into)
+    }
+
     /// `--json status` (release/generation/lock-флаги).
     fn status(&self) -> Result<jt::StatusResult, Box<dyn Error>> {
         let out = self.run_json(&["status"])?;
@@ -229,6 +239,14 @@ impl ProminBackend {
                 source_name: cache.source_name.clone(),
                 name: name.clone(),
                 pkgnames: vec![name.clone()],
+                // Витрина показывает ПРИЛОЖЕНИЯ, не библиотеки. Сюда попадают пакеты БЕЗ
+                // компонента в каталоге (проверка in_channel/pkgnames выше), а каталог
+                // генерится ТОЛЬКО для рецептов с .desktop/metainfo (app-ness авторитетна по
+                // членству в каталоге). Значит augmented-пакет по определению НЕ приложение
+                // (нет desktop-entry) -> метим Addon, а не дефолтный DesktopApplication.
+                // main.rs фильтрует поиск/категории по DesktopApplication, поэтому Addon НЕ
+                // засоряет витрину либами, но остаётся в индексе для install-by-name бэкендом.
+                kind: AppKind::Addon,
                 ..Default::default()
             });
             cache.infos.insert(id.clone(), info);
@@ -265,8 +283,9 @@ impl Backend for ProminBackend {
         for c in self.appstream_caches.iter_mut() {
             c.reload();
         }
-        // достраиваем витрину промин-индексом (пакеты без MetaInfo тоже видны/искаемы).
-        // ПОСЛЕ reload(): reload() парсит AppStream-каталог, мы добавляем недостающее
+        // достраиваем промин-индекс: пакеты без компонента в каталоге кладём в кеш как
+        // Addon (install-by-name бэкендом), НЕ как приложения — витрина показывает аппы,
+        // не либы. ПОСЛЕ reload(): reload() парсит AppStream-каталог, добавляем недостающее
         self.augment_cache_with_recipes();
         Ok(())
     }

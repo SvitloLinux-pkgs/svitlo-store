@@ -50,6 +50,20 @@ pub struct RecipesResult {
     pub recipes: Vec<String>,
 }
 
+// ---- accept-eula: `--json accept-eula <channel>` -> {ok, channel, eula_accepted} ----
+// Gated/nonfree-каналы гейтят install по EULA (client падает client_eula_required без
+// маркера). Принятие фиксирует маркер /promin/eula/<channel>.accepted. В шиппинг-сторе
+// стандартного канала не срабатывает (EULA только у gated). eula_accepted = путь маркера.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AcceptEulaResult {
+    #[allow(dead_code)]
+    pub ok: bool,
+    #[allow(dead_code)]
+    pub channel: String,
+    #[allow(dead_code)]
+    pub eula_accepted: String,
+}
+
 // ---- list: `--json list` -> {packages:{name:store_name}} ----
 // store_name это basename store-пути (см __main__.py: Path(pa).name)
 #[derive(Debug, Clone, Deserialize)]
